@@ -123,6 +123,7 @@ void WiFiManager::setupConfigPortal() {
   server->on("/wifisave", std::bind(&WiFiManager::handleWifiSave, this));
   server->on("/i", std::bind(&WiFiManager::handleInfo, this));
   server->on("/r", std::bind(&WiFiManager::handleReset, this));
+  server->on("/w", std::bind(&WiFiManager::handleWPS, this));
   //server->on("/generate_204", std::bind(&WiFiManager::handle204, this));  //Android/Chrome OS captive portal check.
   server->on("/fwlink", std::bind(&WiFiManager::handleRoot, this));  //Microsoft captive portal. Maybe not needed. Might be handled by notFound handler.
   server->onNotFound (std::bind(&WiFiManager::handleNotFound, this));
@@ -671,7 +672,28 @@ void WiFiManager::handleReset() {
   delay(2000);
 }
 
+void WiFiManager::handleWPS() {
+  DEBUG_WM(F("WPS Start"));
 
+  String page = FPSTR(HTTP_HEAD);
+  page.replace("{v}", "Info");
+  page += FPSTR(HTTP_SCRIPT);
+  page += FPSTR(HTTP_STYLE);
+  page += _customHeadElement;
+  page += FPSTR(HTTP_HEAD_END);
+  page += F("Module will start WPS in a few seconds.");
+  page += FPSTR(HTTP_END);
+  server->send(200, "text/html", page);
+
+  DEBUG_WM(F("Sent WPS page"));
+  // WPS works in STA (Station mode) only.
+  WiFi.mode(WIFI_STA);
+  delay(3000);
+  startWPS();
+  delay(5000);
+  ESP.reset();
+  delay(5000);
+}
 
 //removed as mentioned here https://github.com/tzapu/WiFiManager/issues/114
 /*void WiFiManager::handle204() {
